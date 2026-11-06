@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WxBot 操作指南</title>
+<style>
+  :root{
+    --canvas:#0F1115; --panel:#12141A; --card:#1A1D24; --card-2:#171A21;
+    --divider:#1E2129; --border:#262A33; --stroke:#3A404C;
+    --ink:#E8EAED; --ink-sub:#9BA1AB; --ink-mute:#8A919C;
+    --primary:#07C160; --primary-soft:rgba(7,193,96,.12);
+    --warning:#F5A623; --error:#F04A4A; --info:#3B82F6;
+    --kb-bg:#1F3A2E; --ai-bg:#1E2A45;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--canvas); color:var(--ink);
+    font-family:system-ui,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+    font-size:13px; line-height:20px; padding:36px 16px 64px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:840px;margin:0 auto}
+  a{color:inherit}
+
+  .hero{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+  .brand{display:flex;align-items:center;gap:14px}
+  .brand-mark{width:46px;height:46px;flex:none;border-radius:12px;background:linear-gradient(160deg,#1B2129,#12151B);border:1px solid var(--border);display:flex;align-items:center;justify-content:center}
+  h1{font-size:21px;font-weight:600;line-height:28px;letter-spacing:.2px}
+  .sub{color:var(--ink-sub);margin-top:4px;font-size:12.5px}
+  .meta{display:flex;gap:8px;flex-wrap:wrap;padding-top:4px}
+  .badge{font-size:11px;line-height:18px;padding:1px 9px;border-radius:9999px;border:1px solid rgba(7,193,96,.36);background:var(--primary-soft);color:var(--primary);white-space:nowrap}
+  .badge.ghost{border-color:var(--border);background:var(--panel);color:var(--ink-sub)}
+
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 22px}
+  .toc a{text-decoration:none;font-size:12px;color:var(--ink-sub);background:var(--panel);border:1px solid var(--border);border-radius:9999px;padding:4px 12px;transition:.15s}
+  .toc a:hover{color:var(--primary);border-color:var(--primary)}
+
+  .quick{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+  .quick .q{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+  .quick .q b{display:block;font-size:12.5px;margin-bottom:3px}
+  .quick .q span{color:var(--ink-sub);font-size:12px}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:22px 24px;margin-bottom:16px}
+  h2{font-size:15px;font-weight:600;line-height:22px;padding-left:11px;border-left:3px solid var(--primary);margin-bottom:6px}
+  .h2sub{color:var(--ink-mute);font-size:12px;padding-left:14px;margin-bottom:18px}
+  h3{font-size:13px;font-weight:600;margin:18px 0 8px;color:var(--ink)}
+  .lead{color:var(--ink-sub);margin-bottom:14px}
+  .note{color:var(--ink-mute);font-size:12px;margin-top:10px}
+  b{font-weight:600}
+  .green{color:var(--primary)}
+  .amber{color:var(--warning)}
+  .red{color:var(--error)}
+  .kbd{font-family:Consolas,"Courier New",monospace;font-size:12px;background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:0 5px}
+
+  /* 流程图 */
+  .diagram{display:block;width:100%;height:auto;margin:4px 0 2px}
+  .flow-caption{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:2px}
+  .flow-caption span{font-size:11px;color:var(--ink-mute);text-align:center;line-height:16px}
+
+  /* 步骤 */
+  .steps{list-style:none;display:flex;flex-direction:column;gap:14px}
+  .steps li{display:flex;gap:14px;align-items:flex-start}
+  .steps .no{flex:none;width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;margin-top:1px}
+  .steps .body{flex:1;min-width:0}
+  .steps .body > b{display:block;margin-bottom:2px}
+  .steps .body p{color:var(--ink-sub)}
+
+  /* 界面地图 */
+  .mock{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--canvas);margin:6px 0 14px;box-shadow:0 12px 30px rgba(0,0,0,.25)}
+  .mock-bar{height:34px;display:flex;align-items:center;gap:7px;padding:0 12px;background:var(--panel);border-bottom:1px solid var(--divider)}
+  .mock-bar i{width:9px;height:9px;border-radius:50%;background:var(--stroke);display:block}
+  .mock-bar .t{margin-left:8px;font-size:11px;color:var(--ink-mute)}
+  .mock-body{display:grid;grid-template-columns:126px 1fr 150px;min-height:252px}
+  .mock-side{background:var(--panel);border-right:1px solid var(--divider);padding:10px 8px;display:flex;flex-direction:column;gap:3px}
+  .mock-nav{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink-sub);padding:5px 8px;border-radius:6px}
+  .mock-nav.on{color:var(--primary);background:var(--primary-soft)}
+  .mock-nav svg{width:12px;height:12px;flex:none}
+  .mock-main{display:flex;flex-direction:column;min-width:0}
+  .mock-top{height:38px;flex:none;display:flex;align-items:center;gap:12px;padding:0 12px;border-bottom:1px solid var(--divider)}
+  .lamps{display:flex;gap:7px}
+  .lamp{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+  .lamp.g{background:var(--primary);box-shadow:0 0 0 3px rgba(7,193,96,.15)}
+  .lamp.y{background:var(--warning);box-shadow:0 0 0 3px rgba(245,166,35,.15)}
+  .lamp.r{background:var(--error);box-shadow:0 0 0 3px rgba(240,74,74,.15)}
+  .lamp.n{background:#5B6270}
+  .mock-chat{flex:1;padding:12px;display:flex;flex-direction:column;gap:9px}
+  .bubble{max-width:80%;padding:6px 9px;border-radius:8px;font-size:11px;line-height:17px}
+  .bubble.in{background:#22262F;align-self:flex-start}
+  .bubble.out{background:rgba(7,193,96,.13);border:1px solid rgba(7,193,96,.28);align-self:flex-end}
+  .src{display:inline-block;font-size:10px;line-height:15px;padding:0 4px;border-radius:3px;margin-right:4px;vertical-align:1px}
+  .src.rule{background:#242832;color:var(--ink-sub)}
+  .src.kb{background:var(--kb-bg);color:var(--primary)}
+  .src.ai{background:var(--ai-bg);color:var(--info)}
+  .mock-log{background:var(--panel);border-left:1px solid var(--divider);padding:10px;display:flex;flex-direction:column;gap:8px}
+  .mock-log .lt{font-size:10px;color:var(--ink-mute);letter-spacing:.5px}
+  .logline{font-size:10.5px;line-height:15px;color:var(--ink-sub);border-left:2px solid var(--stroke);padding-left:7px}
+  .logline.ok{border-color:var(--primary)}
+  .logline.warn{border-color:var(--warning)}
+  .logline.err{border-color:var(--error)}
+  .pin{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--primary);color:#04170D;font-size:9.5px;font-weight:700;flex:none;vertical-align:1px}
+  .legend{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:8px 18px}
+  .legend li{display:flex;gap:8px;color:var(--ink-sub);font-size:12px}
+  .legend li b{color:var(--ink);font-weight:500}
+
+  /* 监控模式 */
+  .modes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:6px 0 4px}
+  .mode{background:var(--card-2);border:1px solid var(--border);border-radius:9px;padding:12px 14px}
+  .mode.on{border-color:rgba(7,193,96,.42);background:rgba(7,193,96,.06)}
+  .mode b{display:block;font-size:12.5px;margin-bottom:3px}
+  .mode span{font-size:11.5px;color:var(--ink-sub);line-height:16px;display:block}
+  .mode code{font-family:Consolas,monospace;font-size:10.5px;color:var(--ink-mute)}
+
+  /* 优先级 */
+  .stack{display:flex;flex-direction:column;gap:8px;margin:6px 0}
+  .layer{display:grid;grid-template-columns:34px 1fr auto;gap:12px;align-items:center;background:var(--card-2);border:1px solid var(--border);border-radius:9px;padding:12px 14px}
+  .layer .rank{width:26px;height:26px;border-radius:50%;background:var(--panel);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--ink-sub);font-weight:600}
+  .layer.first .rank{background:var(--primary-soft);border-color:rgba(7,193,96,.4);color:var(--primary)}
+  .layer .txt b{display:block;font-size:12.5px;margin-bottom:1px}
+  .layer .txt span{font-size:11.5px;color:var(--ink-sub)}
+  .layer .tag{font-size:10.5px;color:var(--ink-mute);border:1px dashed var(--border);border-radius:9999px;padding:1px 8px;white-space:nowrap}
+  .layer.first .tag{color:var(--primary);border-color:rgba(7,193,96,.4);border-style:solid}
+
+  /* 首次运行 */
+  .prompts{display:flex;flex-direction:column;gap:10px}
+  .prompt{display:flex;gap:14px;background:var(--card-2);border:1px solid var(--border);border-radius:9px;padding:14px 16px}
+  .prompt .num{flex:none;width:22px;height:22px;border-radius:6px;background:var(--panel);border:1px solid var(--border);color:var(--ink-sub);font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center}
+  .prompt .c{flex:1}
+  .prompt .c b{display:block;margin-bottom:2px}
+  .prompt .c p{color:var(--ink-sub);font-size:12px}
+  .prompt .c p + p{margin-top:5px}
+
+  /* 排查树 */
+  .tree{list-style:none;padding-left:0;margin-top:4px}
+  .tree ul{list-style:none;margin-left:11px;padding-left:18px;border-left:1px dashed var(--stroke)}
+  .tree li{position:relative;padding:5px 0 5px 0;color:var(--ink-sub)}
+  .tree > li{padding-top:0}
+  .tree ul > li::before{content:"";position:absolute;left:-18px;top:16px;width:12px;border-top:1px dashed var(--stroke)}
+  .tree ul > li:last-child::after{content:"";position:absolute;left:-19px;top:16px;bottom:0;width:2px;background:var(--card)}
+  .tree .q{color:var(--ink);font-weight:500}
+  .tree .yes{color:var(--primary);font-weight:600;margin-right:2px}
+  .tree .no{color:var(--warning);font-weight:600;margin-right:2px}
+
+  /* FAQ */
+  details{background:var(--card-2);border:1px solid var(--border);border-radius:9px;margin-bottom:8px;overflow:hidden}
+  details[open]{border-color:#2E3440}
+  summary{cursor:pointer;list-style:none;padding:12px 16px;font-weight:500;font-size:12.5px;display:flex;align-items:center;gap:9px}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"";width:5px;height:5px;border-right:1.5px solid var(--ink-mute);border-bottom:1.5px solid var(--ink-mute);transform:rotate(-45deg);transition:.15s;flex:none;margin-left:2px}
+  details[open] summary::before{transform:rotate(45deg)}
+  details .a{padding:0 16px 13px 31px;color:var(--ink-sub);font-size:12px}
+  details .a p + p{margin-top:6px}
+
+  .callout{margin-top:14px;background:rgba(245,166,35,.07);border:1px solid rgba(245,166,35,.25);border-radius:8px;padding:12px 14px;color:#D9C08A;font-size:12px}
+  .callout b{color:var(--warning)}
+
+  .facts{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+  .facts th,.facts td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--divider);vertical-align:top}
+  .facts th{color:var(--ink-mute);font-weight:500;font-size:11px;letter-spacing:.3px}
+  .facts td{color:var(--ink-sub)}
+  .facts td:first-child{color:var(--ink);white-space:nowrap}
+  .facts tr:last-child td{border-bottom:none}
+
+  footer{color:var(--ink-mute);font-size:11.5px;text-align:center;margin-top:30px;line-height:18px}
+  footer .dot{color:var(--stroke);margin:0 6px}
+
+  @media (max-width:720px){
+    .quick{grid-template-columns:1fr}
+    .modes{grid-template-columns:1fr 1fr}
+    .mock-body{grid-template-columns:1fr}
+    .mock-side,.mock-log{display:none}
+    .flow-caption{grid-template-columns:1fr 1fr 1fr}
+    .legend{grid-template-columns:1fr}
+  }
+  @media (max-width:560px){
+    body{padding:22px 12px 48px}
+    .card{padding:18px 16px}
+    .modes{grid-template-columns:1fr}
+    .layer{grid-template-columns:30px 1fr}
+    .layer .tag{display:none}
+  }
+  @media print{
+    :root{--canvas:#fff;--panel:#F6F7F9;--card:#fff;--card-2:#FAFBFC;--divider:#E3E6EA;--border:#D8DCE2;--stroke:#B9BFC9;--ink:#1A1D22;--ink-sub:#4A505B;--ink-mute:#6B7280}
+    body{padding:0;font-size:12px}
+    .card{break-inside:avoid;box-shadow:none}
+    .mock,.diagram{break-inside:avoid}
+    details{border-color:var(--border)}
+    details .a{display:block}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="4.5" width="15" height="11" rx="3.5" stroke="#07C160" stroke-width="1.6"/>
+          <path d="M7.5 19.5h9a4 4 0 0 0 4-4v-3" stroke="#9BA1AB" stroke-width="1.6" stroke-linecap="round"/>
+          <circle cx="7.6" cy="10" r="1.1" fill="#07C160"/>
+          <circle cx="12.4" cy="10" r="1.1" fill="#07C160"/>
+        </svg>
+      </div>
+      <div>
+        <h1>WxBot 操作指南</h1>
+        <p class="sub">本地微信 AI 助手 · 监控微信新消息，按规则 / 知识库 / AI 自动回复，全程在您电脑上运行。</p>
+      </div>
+    </div>
+    <div class="meta">
+      <span class="badge" id="ver">v10.0.7</span>
+      <span class="badge ghost">离线文档</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <a href="#how">工作原理</a>
+    <a href="#start">五分钟上手</a>
+    <a href="#ui">界面地图</a>
+    <a href="#monitor">监控对象</a>
+    <a href="#priority">回复顺序</a>
+    <a href="#lamps">状态灯</a>
+    <a href="#firstrun">首次运行</a>
+    <a href="#trouble">发不出去</a>
+    <a href="#faq">常见问题</a>
+    <a href="#privacy">合规与隐私</a>
+  </nav>
+
+  <div class="quick">
+    <div class="q"><b>只碰你允许的会话</b><span>监控对象之外的群和人不读、不回、也不切过去。</span></div>
+    <div class="q"><b>先规则，再资料，最后 AI</b><span>命中规则立刻回；没命中查知识库；都没有才问 AI。</span></div>
+    <div class="q"><b>数据不出本机</b><span>聊天记录、配置、知识库都只存在本机磁盘（授权校验除外）。</span></div>
+  </div>
+
+  <!-- 1 -->
+  <section class="card" id="how">
+    <h2>一、它是怎么工作的</h2>
+    <p class="hsub">一次回复要经过五道关，任何一道没过就不会发送。</p>
+
+    <svg class="diagram" viewBox="0 0 920 196" role="img" aria-label="消息处理流程：微信窗口、截屏识别、监控判定、生成回复、模拟发送">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0 0 L10 5 L0 10 Z" fill="#3A404C"/>
+        </marker>
+      </defs>
+
+      <g transform="translate(10,34)">
+        <rect width="150" height="128" rx="12" fill="#1A1D24" stroke="#262A33"/>
+        <g stroke="#9BA1AB" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="63" y="18" width="24" height="18" rx="4"/>
+          <path d="M69 41l-1 7 7-4"/>
+          <rect x="54" y="26" width="18" height="13" rx="3" stroke="#07C160"/>
+        </g>
+        <text x="75" y="74" text-anchor="middle" fill="#E8EAED" font-size="13" font-weight="600">微信窗口</text>
+        <text x="75" y="94" text-anchor="middle" fill="#8A919C" font-size="11">保持打开、不最小化</text>
+        <text x="75" y="112" text-anchor="middle" fill="#8A919C" font-size="11">被遮挡不影响读取</text>
+      </g>
+
+      <line x1="166" y1="98" x2="197" y2="98" stroke="#3A404C" stroke-width="1.4" marker-end="url(#arrow)"/>
+
+      <g transform="translate(200,34)">
+        <rect width="150" height="128" rx="12" fill="#1A1D24" stroke="#262A33"/>
+        <g stroke="#9BA1AB" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M59 30h-4a3 3 0 0 0-3 3v4M91 30h4a3 3 0 0 1 3 3v4M59 54h-4a3 3 0 0 1-3-3v-4M91 54h4a3 3 0 0 0 3-3v-4"/>
+          <path d="M66 42h18" stroke="#07C160"/>
+        </g>
+        <text x="75" y="74" text-anchor="middle" fill="#E8EAED" font-size="13" font-weight="600">截屏识别</text>
+        <text x="75" y="94" text-anchor="middle" fill="#8A919C" font-size="11">OCR 读取文字</text>
+        <text x="75" y="112" text-anchor="middle" fill="#8A919C" font-size="11">区分自己 / 对方</text>
+      </g>
+
+      <line x1="356" y1="98" x2="387" y2="98" stroke="#3A404C" stroke-width="1.4" marker-end="url(#arrow)"/>
+
+      <g transform="translate(390,34)">
+        <rect width="150" height="128" rx="12" fill="#1A1D24" stroke="#07C160" stroke-opacity=".45"/>
+        <g stroke="#07C160" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M75 24l14 5v9c0 9-6 15-14 18-8-3-14-9-14-18v-9z"/>
+          <path d="M68 42l5 5 9-10"/>
+        </g>
+        <text x="75" y="74" text-anchor="middle" fill="#E8EAED" font-size="13" font-weight="600">监控判定</text>
+        <text x="75" y="94" text-anchor="middle" fill="#8A919C" font-size="11">不在名单 → 直接放弃</text>
+        <text x="75" y="112" text-anchor="middle" fill="#8A919C" font-size="11">不回、不读、不切换</text>
+      </g>
+
+      <line x1="546" y1="98" x2="577" y2="98" stroke="#3A404C" stroke-width="1.4" marker-end="url(#arrow)"/>
+
+      <g transform="translate(580,34)">
+        <rect width="150" height="128" rx="12" fill="#1A1D24" stroke="#262A33"/>
+        <g stroke="#9BA1AB" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="60" y="26" width="30" height="8" rx="3" stroke="#07C160"/>
+          <rect x="60" y="38" width="30" height="8" rx="3"/>
+          <rect x="60" y="50" width="30" height="8" rx="3"/>
+        </g>
+        <text x="75" y="74" text-anchor="middle" fill="#E8EAED" font-size="13" font-weight="600">生成回复</text>
+        <text x="75" y="94" text-anchor="middle" fill="#8A919C" font-size="11">规则 → 知识库 → AI</text>
+        <text x="75" y="112" text-anchor="middle" fill="#8A919C" font-size="11">按顺序取第一个可用</text>
+      </g>
+
+      <line x1="736" y1="98" x2="767" y2="98" stroke="#3A404C" stroke-width="1.4" marker-end="url(#arrow)"/>
+
+      <g transform="translate(770,34)">
+        <rect width="140" height="128" rx="12" fill="#1A1D24" stroke="#262A33"/>
+        <g stroke="#9BA1AB" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M52 40l28-12-9 27-8-11z"/>
+          <path d="M63 44l17-9" stroke="#07C160"/>
+        </g>
+        <text x="70" y="74" text-anchor="middle" fill="#E8EAED" font-size="13" font-weight="600">模拟发送</text>
+        <text x="70" y="94" text-anchor="middle" fill="#8A919C" font-size="11">自动切会话</text>
+        <text x="70" y="112" text-anchor="middle" fill="#8A919C" font-size="11">输入并点发送</text>
+      </g>
+    </svg>
+
+    <p class="note">读取靠屏幕识别（不改微信、不注入、不登录网页版）；发送靠模拟键鼠。所以微信窗口需要保持打开——最小化或退出到托盘会读不到。</p>
+  </section>
+
+  <!-- 2 -->
+  <section class="card" id="start">
+    <h2>二、五分钟上手</h2>
+    <p class="hsub">按顺序做完这四步，就能收到第一条自动回复。</p>
+
+    <ol class="steps">
+      <li>
+        <span class="no">1</span>
+        <div class="body">
+          <b>配一个 AI（可跳过）</b>
+          <p>「配置 → AI 设置」→ 选一个服务商 → 填模型与 API Key → 保存后点<b>测试</b>，看到成功再点<b>设为默认</b>。只打算用固定话术回复的话，这一步可以跳过。</p>
+        </div>
+      </li>
+      <li>
+        <span class="no">2</span>
+        <div class="body">
+          <b>写几条常用规则</b>
+          <p>「配置 → 触发规则」→ 新建，填关键词和回复。一条规则可以写多个同义关键词、多条话术随机轮换。内置了 30 条寒暄规则，开箱就能用。</p>
+        </div>
+      </li>
+      <li>
+        <span class="no">3</span>
+        <div class="body">
+          <b>上传资料（可选）</b>
+          <p>「知识库」→ 拖入产品手册 / 常见问答。支持 txt、md、pdf、docx、pptx、xlsx 和图片（图片自动 OCR）。AI 回答前会先查资料。</p>
+        </div>
+      </li>
+      <li>
+        <span class="no">4</span>
+        <div class="body">
+          <b>划定范围并开启监控</b>
+          <p>「配置 → 微信设置」→ 先用<b>一键校准区域</b>识别聊天区与会话列表 → 选好<b>监控对象</b> → 点顶部<b>开启监控</b>。首次开启会自动校准一次。</p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="callout"><b>提示：</b>开启监控之前的旧消息只读不回。只有开启之后收到的新消息才会触发回复，避免一开程序就把历史消息全回一遍。</div>
+  </section>
+
+  <!-- 3 -->
+  <section class="card" id="ui">
+    <h2>三、界面地图</h2>
+    <p class="hsub">下图是界面示意图，标号对应下面的说明；实际界面以程序为准。</p>
+
+    <div class="mock" role="img" aria-label="WxBot 界面示意图">
+      <div class="mock-bar"><i></i><i></i><i></i><span class="t">WxBot</span></div>
+      <div class="mock-body">
+        <div class="mock-side">
+          <div class="mock-nav on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.9-.9L3 21l2-4.9A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/></svg>消息</div>
+          <div class="mock-nav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>工作台</div>
+          <div class="mock-nav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>配置</div>
+          <div class="mock-nav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>角色</div>
+          <div class="mock-nav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>知识库</div>
+          <div class="mock-nav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>指南</div>
+        </div>
+
+        <div class="mock-main">
+          <div class="mock-top">
+            <span class="pin">1</span>
+            <span class="lamps"><span class="lamp g"></span><span class="lamp g"></span><span class="lamp g"></span></span>
+            <span style="font-size:10.5px;color:#8A919C">微信 · AI · 知识库</span>
+            <span style="margin-left:auto;font-size:10.5px;color:#07C160">● 尝试监控</span>
+            <span style="font-size:10.5px;color:#8A919C">自动回复 <span class="pin">2</span></span>
+          </div>
+          <div class="mock-chat">
+            <div class="bubble in">你好，这个还有货吗？</div>
+            <div class="bubble out"><span class="src rule">规则</span>在的，今天下单当天发~</div>
+            <div class="bubble in">保修多久呀？</div>
+            <div class="bubble out"><span class="src kb">知识库</span>整机保修一年，主要部件两年，凭订单号即可。</div>
+          </div>
+        </div>
+
+        <div class="mock-log">
+          <div class="lt">实时日志 <span class="pin">3</span></div>
+          <div class="logline ok">通道已连接</div>
+          <div class="logline ok">切换会话 · 客户A</div>
+          <div class="logline ok">新消息 1 条</div>
+          <div class="logline ok">命中规则 · 已发送</div>
+          <div class="logline warn">今日额度 12 / 50</div>
+        </div>
+      </div>
+    </div>
+
+    <ul class="legend">
+      <li><span class="pin">1</span><span><b>顶部三灯</b>：微信 / AI / 知识库。绿色正常、黄色降级、红色异常，点灯直接跳到对应设置。</span></li>
+      <li><span class="pin">2</span><span><b>自动回复开关</b>：总开关。关掉后仍然接收和记录消息，但一条都不发。</span></li>
+      <li><span class="pin">3</span><span><b>实时日志</b>：每次切换、识别、命中、发送成功或失败都写在这里，排查先看它。</span></li>
+      <li><b>左侧导航</b><span style="display:block;color:#8A919C;font-size:12px">消息 / 工作台 / 配置 / 角色 / 知识库 / 指南，六页各管一件事。</span></li>
+      <li><b>消息页</b><span style="display:block;color:#8A919C;font-size:12px">左侧会话列表，中间消息记录，每条自动回复都标了来源。</span></li>
+      <li><b>来源徽标</b><span style="display:block;color:#8A919C;font-size:12px">[规则] 灰、[知识库] 绿、[AI] 蓝，一眼看出这句话是谁说的。</span></li>
+    </ul>
+  </section>
+
+  <!-- 4 -->
+  <section class="card" id="monitor">
+    <h2>四、监控对象：只碰你允许的会话</h2>
+    <p class="hsub">这是全程序最重要的一项设置。名单之外的会话，程序不读、不回，也不会把微信切过去。</p>
+
+    <div class="modes">
+      <div class="mode on"><b>全部群和用户</b><span>所有会话都处理。<code>all</code></span></div>
+      <div class="mode"><b>全部群</b><span>只处理群聊，私聊不动。<code>groups</code></span></div>
+      <div class="mode"><b>全部用户</b><span>只处理私聊，群不动。<code>users</code></span></div>
+      <div class="mode"><b>仅名单内</b><span>只有下面列出的群或人。<code>only</code></span></div>
+      <div class="mode"><b>排除名单</b><span>除了下面列出的，其他都处理。<code>except</code></span></div>
+      <div class="mode"><b>名单怎么填</b><span>逗号分隔，或用「拾取当前会话」「扫描勾选」。</span></div>
+    </div>
+
+    <h3>每收到一条消息都会先过这道闸</h3>
+    <svg class="diagram" viewBox="0 0 820 150" role="img" aria-label="监控判定：新消息进入后判断是否在监控对象内">
+      <defs>
+        <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0 0 L10 5 L0 10 Z" fill="#3A404C"/>
+        </marker>
+      </defs>
+      <g transform="translate(10,38)">
+        <rect width="150" height="74" rx="10" fill="#1A1D24" stroke="#262A33"/>
+        <text x="75" y="32" text-anchor="middle" fill="#E8EAED" font-size="12.5" font-weight="600">会话出现新消息</text>
+        <text x="75" y="52" text-anchor="middle" fill="#8A919C" font-size="11">红圈 / 数字角标</text>
+      </g>
+      <line x1="166" y1="75" x2="212" y2="75" stroke="#3A404C" stroke-width="1.4" marker-end="url(#arrow2)"/>
+      <g transform="translate(218,26)">
+        <path d="M0 49 L64 0 L128 49 L64 98 Z" fill="#1A1D24" stroke="#07C160" stroke-opacity=".5"/>
+        <text x="64" y="45" text-anchor="middle" fill="#E8EAED" font-size="12" font-weight="600">在监控对象里？</text>
+        <text x="64" y="63" text-anchor="middle" fill="#8A919C" font-size="10.5">按当前模式判定</text>
+      </g>
+      <line x1="350" y1="50" x2="420" y2="28" stroke="#3A404C" stroke-width="1.4" marker-end="url(#arrow2)"/>
+      <text x="372" y="22" fill="#07C160" font-size="11" font-weight="600">是</text>
+      <g transform="translate(426,0)">
+        <rect width="170" height="60" rx="10" fill="#1A1D24" stroke="#262A33"/>
+        <text x="85" y="25" text-anchor="middle" fill="#E8EAED" font-size="12" font-weight="600">读取 → 生成回复</text>
+        <text x="85" y="45" text-anchor="middle" fill="#8A919C" font-size="10.5">读取时才切换会话</text>
+      </g>
+      <line x1="350" y1="100" x2="420" y2="118" stroke="#3A404C" stroke-width="1.4" marker-end="url(#arrow2)"/>
+      <text x="372" y="124" fill="#F5A623" font-size="11" font-weight="600">否</text>
+      <g transform="translate(426,90)">
+        <rect width="170" height="60" rx="10" fill="#1A1D24" stroke="#262A33"/>
+        <text x="85" y="25" text-anchor="middle" fill="#E8EAED" font-size="12" font-weight="600">直接忽略</text>
+        <text x="85" y="45" text-anchor="middle" fill="#8A919C" font-size="10.5">不读、不回、不切换</text>
+      </g>
+      <g transform="translate(626,26)">
+        <rect width="176" height="98" rx="10" fill="rgba(7,193,96,.06)" stroke="rgba(7,193,96,.35)"/>
+        <text x="88" y="26" text-anchor="middle" fill="#07C160" font-size="11.5" font-weight="600">判定不靠猜</text>
+        <text x="88" y="48" text-anchor="middle" fill="#9BA1AB" font-size="10.5">群名尾部 (3) 视为群</text>
+        <text x="88" y="66" text-anchor="middle" fill="#9BA1AB" font-size="10.5">名字含「群 / Group」视为群</text>
+        <text x="88" y="84" text-anchor="middle" fill="#9BA1AB" font-size="10.5">学到的分类 + 群系统行</text>
+      </g>
+    </svg>
+
+    <p class="note">保存监控对象后会立刻生效，之前因为「不在名单」被跳过的会话也会重新参与判定。群身份判不准时，程序会结合标题、已学到的分类和聊天区的群系统提示行来判断。</p>
+
+    <h3>群消息默认「被 @ 才回」</h3>
+    <p class="lead" style="margin-bottom:8px">监控范围只管「哪些会话要管」，群里每条消息回不回，还有一道默认开关：<b>群里只有 @ 你的消息才自动回复</b>（微信设置 → 监控对象下方的「群消息需要被 @ 才自动回复」，默认勾选）。</p>
+    <ul class="legend" style="grid-template-columns:1fr">
+      <li><span class="lamp g"></span><span>勾上（默认）：群里不 @ 的闲聊一律不回，避免插话；被 @ 的消息正常走规则 / 知识库 / AI。</span></li>
+      <li><span class="lamp y"></span><span>取消勾选：群里所有消息都自动回复，适合客服群、接单群这类场景。</span></li>
+    </ul>
+    <p class="note">被「未 @ 跳过」的群消息会在实时日志里显示为一行 [信息]「群消息未@，已跳过【群名】」——这是<b>按设计跳过</b>，不是发送失败；真正发送失败会显示「发送失败」的原因文字。</p>
+
+    <div class="callout"><b>建议：</b>第一次用先选「仅名单内」，只填一两个自己的测试群或小号。确认稳定后再放宽，避免误回客户或家人。</div>
+  </section>
+
+  <!-- 5 -->
+  <section class="card" id="priority">
+    <h2>五、一条回复是怎么被选出来的</h2>
+    <p class="hsub">严格按顺序，前一层命中就不再往后走。这样规则永远最优先，AI 不会抢话。</p>
+
+    <div class="stack">
+      <div class="layer first">
+        <span class="rank">1</span>
+        <span class="txt"><b>触发规则</b><span>关键词命中任意一条即回复。一条规则可配多条话术随机轮换，不会每次都一样。</span></span>
+        <span class="tag">命中即停</span>
+      </div>
+      <div class="layer">
+        <span class="rank">2</span>
+        <span class="txt"><b>知识库</b><span>用真实消息去检索已上传资料，找到足够相关的片段就据此作答，并标注 [知识库] 与来源文件。</span></span>
+        <span class="tag">有答案才用</span>
+      </div>
+      <div class="layer">
+        <span class="rank">3</span>
+        <span class="txt"><b>AI</b><span>带上最近几条对话和人设提示词请求模型；多配置按主 / 备顺序，主挂自动切备用。</span></span>
+        <span class="tag">兜底</span>
+      </div>
+    </div>
+
+    <p class="note">三层都没结果、或额度用完时，程序不会硬编一句话发出去，而是记录原因并在界面提示。规则命中的优先级高于知识库和 AI——这是刻意设计的，方便你用固定话术压住重要场景。</p>
+  </section>
+
+  <!-- 6 -->
+  <section class="card" id="lamps">
+    <h2>六、状态灯与只读模式</h2>
+    <p class="hsub">三盏灯永远可见，扫一眼就知道哪里出了问题。</p>
+
+    <table class="facts">
+      <tr><th>状态灯</th><th>含义</th><th>怎么办</th></tr>
+      <tr><td><span class="lamp g"></span> 绿色</td><td>通道正常、AI 可用、知识库已就绪</td><td>不用管，正常工作</td></tr>
+      <tr><td><span class="lamp y"></span> 黄色</td><td>降级：AI 熔断 / 限流 / 未配置，但规则仍能回</td><td>点灯进设置检查，或等冷却结束</td></tr>
+      <tr><td><span class="lamp r"></span> 红色</td><td>断开或不可用：微信读不到、接口报错</td><td>点灯看原因，按提示修复</td></tr>
+      <tr><td><span class="lamp n"></span> 灰色</td><td>未开启或未配置</td><td>开启监控 / 补配置</td></tr>
+    </table>
+
+    <h3>看到「只读模式 · 发送需管理员」怎么办</h3>
+    <p class="lead" style="margin-bottom:8px">能读消息，但点不动微信、字也打不进去。原因是 Windows 的 UIPI：低权限程序不能向高权限窗口发送模拟输入。</p>
+    <ul class="legend" style="grid-template-columns:1fr">
+      <li><span class="pin">1</span><span>关掉 WxBot。</span></li>
+      <li><span class="pin">2</span><span>右键 <span class="kbd">WxBot.exe</span> →「以管理员身份运行」→ 弹窗点「是」。</span></li>
+      <li><span class="pin">3</span><span>重新打开后灯变绿即可发送。只想读消息的话，不处理也能继续用。</span></li>
+    </ul>
+    <p class="note">程序最多只申请一次提权，被拒绝就以只读模式继续，不会反复弹窗。想彻底不要 UAC，可用 <span class="kbd">WxBot.exe --no-elevate</span> 启动。</p>
+  </section>
+
+  <!-- 7 -->
+  <section class="card" id="firstrun">
+    <h2>七、首次运行可能看到的三种提示</h2>
+    <p class="hsub">都不是报毒。按下面处理，之后基本不会再出现。</p>
+
+    <div class="prompts">
+      <div class="prompt">
+        <span class="num">1</span>
+        <div class="c">
+          <b>「Windows 已保护你的电脑」/ 未知发布者</b>
+          <p>这是 SmartScreen 对未签名 + 网络下载文件的信誉拦截。解压前右键压缩包 →「属性」→ 勾选<b>解除锁定</b> → 再解压；已经解压过的，在该目录打开 PowerShell 执行 <span class="kbd">Get-ChildItem -Recurse | Unblock-File</span>。</p>
+          <p class="note">程序首次启动后会自己清除下载标记，<b>第二次起不再出现</b>。想第一次就避免，解压前先解除锁定；要彻底消除（换电脑、重新下载也不提示）只能使用受信任的代码签名证书。</p>
+        </div>
+      </div>
+      <div class="prompt">
+        <span class="num">2</span>
+        <div class="c">
+          <b>UAC「是否允许此应用对你的设备进行更改」</b>
+          <p>只有微信以管理员身份运行、或本程序被系统降权时才需要。点「是」只弹这一次；点「否」程序也会继续以只读模式运行，不会退出，也不会再弹第二个提示框。</p>
+          <p class="note">提权前程序会先清掉下载标记并跳过重复的 zone 检查，所以不会出现「打开文件 - 安全警告 / 无法验证发布者」，需要提权时最多只剩这一道 UAC。</p>
+        </div>
+      </div>
+      <div class="prompt">
+        <span class="num">3</span>
+        <div class="c">
+          <b>杀毒软件 / 安全卫士提示「有风险」</b>
+          <p>无签名 + 模拟点击的程序常见误报。把 WxBot 整个目录加入信任 / 排除项即可。程序不会、也无法替你关闭安全软件。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section class="card" id="trouble">
+    <h2>八、发不出去？按这个顺序查</h2>
+    <p class="hsub">从最常见的开始，逐条排除，通常前两步就能解决。</p>
+
+    <ul class="tree">
+      <li>
+        <span class="q">微信收不到自动回复</span>
+        <ul>
+          <li><span class="no">①</span> 三盏灯里有红灯 → 点红灯进对应设置，先修通道 / AI / 知识库。</li>
+          <li><span class="no">②</span> 顶部「自动回复」总开关是否关着 → 打开。</li>
+          <li><span class="no">③</span> 这个会话在监控对象里吗 → 不在就加名单，或换成「全部用户 / 全部群」。</li>
+          <li><span class="no">④</span> 微信窗口是否最小化 / 收进托盘 → 恢复窗口；被其他窗口遮挡不要紧。</li>
+          <li><span class="no">⑤</span> 是否显示「只读模式」→ 右键以管理员身份运行（见上一节）。</li>
+          <li><span class="no">⑥</span> 是否超过免费额度（每天 50 条）→ 看工作台今日统计。</li>
+          <li><span class="no">⑦</span> 以上都正常 → 点「读取自检」，它会逐环节报告窗口、截图、标题、监控范围和消息识别哪一步失败。</li>
+        </ul>
+      </li>
+      <li>
+        <span class="q">能识别消息，但回复内容不对</span>
+        <ul>
+          <li><span class="no">①</span> 消息上标的是 [规则] → 关键词太宽，收窄关键词或降低该规则优先级。</li>
+          <li><span class="no">②</span> 标的是 [知识库] 但答偏了 → 检查资料原文，或换更明确的问法测试。</li>
+          <li><span class="no">③</span> 标的是 [AI] → 先点测试确认接口正常，再调整人设提示词。</li>
+        </ul>
+      </li>
+      <li>
+        <span class="q">识别错字 / 漏消息</span>
+        <ul>
+          <li><span class="no">①</span> 微信窗口太窄 → 在「微信设置 → 高级」开「布局锚定」，不足半屏宽时自动补齐。</li>
+          <li><span class="no">②</span> 窗口位置固定 → 勾「固定读取区域」加快读取、减少误判。</li>
+          <li><span class="no">③</span> 重新点一次「一键校准区域」。</li>
+        </ul>
+      </li>
+    </ul>
+  </section>
+
+  <!-- 9 -->
+  <section class="card" id="faq">
+    <h2>九、常见问题</h2>
+    <p class="hsub">点标题展开答案。</p>
+
+    <details>
+      <summary>它会一直抢我的鼠标和键盘吗？</summary>
+      <div class="a"><p>不会。空闲时只做不点击的后台检查；只有确定有新消息要读取或发送时才切换会话并前置微信。勾选「你操作时不打扰」后，你动键鼠时它会先等你停手。</p></div>
+    </details>
+    <details>
+      <summary>微信窗口一定要放在最前面吗？</summary>
+      <div class="a"><p>不需要置顶，也不能最小化。窗口被其他程序遮住仍可读取；最小化或退出到托盘后就读不到了。发送时程序会自己把微信切到前台。</p></div>
+    </details>
+    <details>
+      <summary>开启监控后，历史消息会被回复吗？</summary>
+      <div class="a"><p>不会。开启之前的消息只读不回，只有开启之后新收到的消息才触发回复。</p></div>
+    </details>
+    <details>
+      <summary>免费版有哪些限制？</summary>
+      <div class="a"><p>每天 50 条自动回复、5 条自定义规则、1 个 AI 配置、知识库 10 MB。内置的 30 条常用规则不计入自定义额度。激活授权后解除限制。</p></div>
+    </details>
+    <details>
+      <summary>换电脑后授权还能用吗？</summary>
+      <div class="a"><p>授权与机器码绑定。机器码在首次运行时按本机信息生成并写入 <span class="kbd">data/machine_id.txt</span>，不随安装包附带。换机后需要重新申请或迁移授权。</p></div>
+    </details>
+    <details>
+      <summary>数据会上传到服务器吗？</summary>
+      <div class="a"><p>聊天记录、配置、知识库都只存在本机 <span class="kbd">data</span> 目录。只有在你配置了云端 AI 时，消息内容才会发给你选的模型服务商；授权校验会联网。两者都可在设置里查看。</p></div>
+    </details>
+    <details>
+      <summary>想临时全部停掉怎么办？</summary>
+      <div class="a"><p>关掉顶部的「自动回复」总开关，或点「停止监控」。前者仍记录消息但不发送；后者连读取也停下。托盘菜单里也有「暂停」。</p></div>
+    </details>
+    <details>
+      <summary>关闭窗口后程序还在后台吗？</summary>
+      <div class="a"><p>默认关闭主窗口即退出进程。需要常驻时用托盘菜单，托盘里保留「打开界面 / 暂停 / 退出」。</p></div>
+    </details>
+  </section>
+
+  <!-- 10 -->
+  <section class="card" id="privacy">
+    <h2>十、合规与隐私</h2>
+    <ul class="legend" style="grid-template-columns:1fr">
+      <li><span class="lamp y"></span><span><b>合规说明：</b>本软件通过屏幕识别与模拟操作实现自动回复。个人微信账号的自动化行为可能违反微信《软件许可协议》，存在账号风险。仅供个人学习研究，请使用独立小号，风险自担。</span></li>
+      <li><span class="lamp g"></span><span><b>数据隐私：</b>聊天数据、配置与知识库仅保存在本机，不上传任何服务器（授权校验除外）。请妥善保管本机数据与 API 密钥。</span></li>
+      <li><span class="lamp n"></span><span><b>免责声明：</b>因使用本软件导致的账号异常、内容合规问题或经济损失，作者不承担任何责任。请勿用于违法、骚扰或批量营销。</span></li>
+    </ul>
+    <p class="note" style="margin-top:14px">继续使用即表示你已阅读并同意上述条款。</p>
+  </section>
+
+  <footer>
+    WxBot 操作指南 <span class="dot">·</span> 适用版本 <span id="ver-foot">v10.0.7</span> <span class="dot">·</span> 随程序一同发布，双击即可离线查看<br>
+    本文件为纯本地 HTML，不加载任何外部资源，断网也能正常阅读。
+  </footer>
+
+</div>
+</body>
+</html>
